@@ -27,15 +27,11 @@ export class EthersService {
       mainnet: "mainnet",
       goerli: "goerli",
       sepolia: "sepolia",
-      // Add other networks as needed
     };
 
     return networkMap[network] || network;
   }
 
-  /**
-   * Get wallet balance including optional fiat conversion
-   */
   async getWalletBalance(
     address: string,
     fiatCurrency?: string,
@@ -53,7 +49,6 @@ export class EthersService {
       balanceEth,
     };
 
-    // Add fiat conversion if requested
     if (fiatCurrency) {
       const fiatValue = await this.convertEthToFiat(balanceEth, fiatCurrency);
       result.fiatValue = fiatValue;
@@ -62,9 +57,6 @@ export class EthersService {
     return result;
   }
 
-  /**
-   * Sign and send a transaction
-   */
   async sendTransaction(txRequest: TransactionRequest): Promise<string> {
     if (!ethers.isAddress(txRequest.to)) {
       throw new Error("Invalid recipient address");
@@ -74,15 +66,12 @@ export class EthersService {
       throw new Error("Private key is required");
     }
 
-    // Create wallet from private key
     const wallet = new ethers.Wallet(txRequest.privateKey, this.provider);
 
-    // Check that from address matches wallet address
     if (wallet.address.toLowerCase() !== txRequest.from.toLowerCase()) {
       throw new Error("From address does not match the provided private key");
     }
 
-    // Create transaction
     const tx = {
       to: txRequest.to,
       value: ethers.parseEther(txRequest.value),
@@ -92,18 +81,13 @@ export class EthersService {
         : undefined,
     };
 
-    // Sign and send transaction
     const txResponse = await wallet.sendTransaction(tx);
 
-    // Wait for one confirmation
     await txResponse.wait(1);
 
     return txResponse.hash;
   }
 
-  /**
-   * Get transaction history for an address
-   */
   async getTransactionHistory(
     address: string,
     limit: number = 10,
@@ -149,25 +133,19 @@ export class EthersService {
     return transactions;
   }
 
-  /**
-   * Get transaction details
-   */
   async getTransactionDetails(txHash: string): Promise<Transaction> {
-    // Get transaction details
     const tx = await this.provider.getTransaction(txHash);
 
     if (!tx) {
       throw new Error("Transaction not found");
     }
 
-    // Get receipt for status and gas used
     const receipt = await this.provider.getTransactionReceipt(txHash);
 
     if (!receipt) {
       throw new Error("Transaction receipt not found");
     }
 
-    // Get block for timestamp
     const block = await this.provider.getBlock(tx.blockNumber as number);
 
     return {
@@ -183,9 +161,6 @@ export class EthersService {
     };
   }
 
-  /**
-   * Convert ETH to fiat currency
-   */
   async convertEthToFiat(
     ethAmount: string,
     currency: string = config.defaultFiatCurrency,
@@ -209,9 +184,6 @@ export class EthersService {
     }
   }
 
-  /**
-   * Create a new wallet
-   */
   createWallet(): { address: string; privateKey: string } {
     const wallet = ethers.Wallet.createRandom();
 
@@ -222,5 +194,4 @@ export class EthersService {
   }
 }
 
-// Singleton instance
 export const ethersService = new EthersService();

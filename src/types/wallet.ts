@@ -39,4 +39,3 @@ export interface FiatConversion {
   exchangeRate: number;
   timestamp: number;
 }
-

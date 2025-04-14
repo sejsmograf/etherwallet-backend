@@ -1,4 +1,4 @@
 export interface InfuraConfig {
-	projectId: string;
-	network: string;
+  projectId: string;
+  network: string;
 }
