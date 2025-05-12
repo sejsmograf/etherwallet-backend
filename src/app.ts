@@ -6,6 +6,7 @@ import { json } from "body-parser";
 import { config } from "./config/config";
 import walletRoutes from "./routes/walletRoutes";
 import { errorHandler } from "./middleware/errorHandler";
+import authRoutes from "./routes/authRoutes";
 
 const app = express();
 
@@ -15,6 +16,8 @@ app.use(json({ limit: "1mb" }));
 
 app.use(rateLimit(config.rateLimit));
 
+
+app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 
 app.get("/health", (req, res) => {

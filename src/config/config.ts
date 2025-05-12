@@ -24,4 +24,18 @@ export const config = {
     apiUrl: "https://api.coingecko.com/api/v3",
   },
   defaultFiatCurrency: process.env.DEFAULT_FIAT_CURRENCY || "USD",
+
+  mysql: {
+    host: process.env.DB_HOST || "localhost",
+    port: parseInt(process.env.DB_PORT || "3306", 10),
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "ether_wallet_db",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+  },
+  session: {
+    secret: process.env.SESSION_SECRET || "aK3$sP9!zQ7*gH2@fD5&jL1^cN6_bV8+mX4=wW5",
+  },
 };
