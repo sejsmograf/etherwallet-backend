@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 
 export const getBalance = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { address } = req.params;
@@ -30,7 +30,7 @@ export const getBalance = async (
 
 export const sendTransaction = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { from, to, value, data, gasLimit, privateKey } = req.body;
@@ -67,7 +67,7 @@ export const sendTransaction = async (
 
 export const getTransactionHistory = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { address } = req.params;
@@ -80,7 +80,7 @@ export const getTransactionHistory = async (
 
     const transactions = await ethersService.getTransactionHistory(
       address,
-      limit,
+      limit
     );
 
     res.json(transactions);
@@ -94,7 +94,7 @@ export const getTransactionHistory = async (
 
 export const getTransactionDetails = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { txHash } = req.params;
@@ -112,7 +112,7 @@ export const getTransactionDetails = async (
 
 export const convertToFiat = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
     const { ethAmount } = req.params;
@@ -130,7 +130,7 @@ export const convertToFiat = async (
       : config.defaultFiatCurrency;
     const conversion = await ethersService.convertEthToFiat(
       ethAmount,
-      fiatCurrency,
+      fiatCurrency
     );
 
     res.json({
@@ -148,10 +148,14 @@ export const convertToFiat = async (
 
 export const createWallet = async (
   req: Request,
-  res: Response,
+  res: Response
 ): Promise<void> => {
   try {
-    const wallet = ethersService.createWallet();
+    const wallet = await ethersService.createWallet(req.body.phoneNumber);
+    if (!wallet) {
+      res.status(400).json({ error: "Failed to create wallet" });
+      return;
+    }
     res.json(wallet);
   } catch (error: any) {
     console.error("Error creating wallet:", error);

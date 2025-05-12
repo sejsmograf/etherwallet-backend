@@ -36,6 +36,10 @@ export const config = {
     queueLimit: 0,
   },
   session: {
-    secret: process.env.SESSION_SECRET || "aK3$sP9!zQ7*gH2@fD5&jL1^cN6_bV8+mX4=wW5",
+    secret:
+      process.env.SESSION_SECRET || "aK3$sP9!zQ7*gH2@fD5&jL1^cN6_bV8+mX4=wW5",
+  },
+  telegram: {
+    apiKey: process.env.TELEGRAM_API_KEY || "",
   },
 };
