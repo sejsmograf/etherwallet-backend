@@ -24,4 +24,7 @@ export const config = {
     apiUrl: "https://api.coingecko.com/api/v3",
   },
   defaultFiatCurrency: process.env.DEFAULT_FIAT_CURRENCY || "USD",
+  telegram: {
+    apiKey: process.env.TELEGRAM_API_KEY || "",
+  },
 };
