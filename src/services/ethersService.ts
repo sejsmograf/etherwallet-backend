@@ -168,11 +168,11 @@ export class EthersService {
     currency: string = config.defaultFiatCurrency
   ): Promise<FiatValue> {
     try {
-      const response = await axios.get(
-        `${config.coingecko.apiUrl}/simple/price?ids=ethereum&vs_currencies=${currency.toLowerCase()}`
-      );
+      // const response = await axios.get(
+      //   `${config.coingecko.apiUrl}/simple/price?ids=ethereum&vs_currencies=${currency.toLowerCase()}`
+      // );
 
-      const exchangeRate = response.data.ethereum[currency.toLowerCase()];
+      const exchangeRate = 1; //response.data.ethereum[currency.toLowerCase()];
       const ethValue = parseFloat(ethAmount);
       const fiatValue = (ethValue * exchangeRate).toFixed(2);
 
