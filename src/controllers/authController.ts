@@ -1,20 +1,16 @@
-// src/controllers/authController.ts
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
-// import jwt from "jsonwebtoken";
 import pool from "../db/database";
 import { ethersService } from "../services/ethersService";
-// import { encryptData } from "../utils/cryptoUtils";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { config } from "../config/config";
-import axios from "axios";
-import CryptoJS from "crypto-js";
 import crypto from "crypto";
+import { telegramService } from "../services/telegramService";
+import { decryptData, encryptData } from "../utils/cryptoUtils";
 
 const SALT_ROUNDS = 10;
 interface UserRecord extends RowDataPacket {
   id: number;
-  username: string;
+  phone_number: string;
   password_hash: string;
   wallet_address: string;
 }
@@ -23,11 +19,11 @@ export const registerUser = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { username, password } = req.body;
+  const { phoneNumber, password } = req.body;
   let connection: PoolConnection | null = null;
 
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
+  if (!phoneNumber || !password) {
+    res.status(400).json({ error: "phoneNumber and password are required" });
     return;
   }
   if (password.length < 8) {
@@ -41,28 +37,25 @@ export const registerUser = async (
     connection = await pool.getConnection();
 
     const [existingUsers] = await connection.query<RowDataPacket[]>(
-      "SELECT id FROM users WHERE username = ?",
-      [username]
+      "SELECT id FROM users WHERE phone_number = ?",
+      [phoneNumber]
     );
 
     if (existingUsers.length > 0) {
-      res.status(409).json({ error: "Username already exists" });
+      res.status(409).json({ error: "phone number already exists" });
       return;
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const wallet = await ethersService.createWallet(username);
+    const wallet = await ethersService.createWallet(phoneNumber);
     const { address: walletAddress, privateKey } = wallet;
 
-    const encryptedPrivateKey = await CryptoJS.AES.encrypt(
-      privateKey,
-      password
-    ).toString();
+    const encryptedPrivateKey = await encryptData(privateKey, password);
 
     await connection.query(
-      "INSERT INTO users (username, password_hash, wallet_address, encrypted_private_key, salt) VALUES (?, ?, ?, ?, ?)",
-      [username, passwordHash, walletAddress, encryptedPrivateKey, ""]
+      "INSERT INTO users (phone_number, password_hash, wallet_address, encrypted_private_key, salt) VALUES (?, ?, ?, ?, ?)",
+      [phoneNumber, passwordHash, walletAddress, encryptedPrivateKey, ""]
     );
     res.status(201).json(wallet);
   } catch (error) {
@@ -80,11 +73,11 @@ export const loginUser = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { username, password } = req.body;
+  const { phoneNumber: phoneNumber, password } = req.body;
   let connection: PoolConnection | null = null;
 
-  if (!username || !password) {
-    res.status(400).json({ error: "Username and password are required" });
+  if (!phoneNumber || !password) {
+    res.status(400).json({ error: "phoneNumber and password are required" });
     return;
   }
 
@@ -92,8 +85,8 @@ export const loginUser = async (
     connection = await pool.getConnection();
 
     const [users] = await connection.query<UserRecord[]>(
-      "SELECT id, username, password_hash, wallet_address, encrypted_private_key FROM users WHERE username = ?",
-      [username]
+      "SELECT id, phone_number, password_hash, wallet_address, encrypted_private_key FROM users WHERE phone_number = ?",
+      [phoneNumber]
     );
 
     if (users.length === 0) {
@@ -110,42 +103,28 @@ export const loginUser = async (
       return;
     }
 
-    const decryptedPrivateKey = await CryptoJS.AES.decrypt(
+    const decryptedPrivateKey = await decryptData(
       user.encrypted_private_key,
       password
-    ).toString(CryptoJS.enc.Utf8);
-
-    const randomDigits = String(await crypto.randomInt(100000, 999999));
-    const telegramBaseUrl = "https://gatewayapi.telegram.org/";
-
-    const headers = {
-      Authorization: `Bearer ${config.telegram.apiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    await axios.post(
-      `${telegramBaseUrl}sendVerificationMessage`,
-      {
-        phone_number: user.username,
-        code: randomDigits,
-      },
-      {
-        headers,
-      }
     );
 
-    const verificationCodeEncryptedPrivateKey = await CryptoJS.AES.encrypt(
+    const randomDigits = String(await crypto.randomInt(100000, 999999));
+
+    await telegramService.sendVerificationMessage(
+      phoneNumber,
+      undefined,
+      randomDigits
+    );
+
+    const verificationCodeEncryptedPrivateKey = await encryptData(
       decryptedPrivateKey,
       randomDigits
-    ).toString();
+    );
 
-    console.debug("DEBUG: ", randomDigits);
-
+    // TODO: require jwt for getBalance route and etc.?
     // const payload = {
     //   userId: user.id,
-    //   username: user.username,
     //   walletAddress: user.wallet_address,
-    //   privateKey: verificationCodeEncryptedPrivateKey,
     // };
 
     // const options = {

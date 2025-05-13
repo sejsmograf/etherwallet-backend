@@ -1,0 +1,15 @@
+CREATE DATABASE ether_wallet_db IF NOT EXISTS;
+use ether_wallet_db;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    wallet_address VARCHAR(42) NOT NULL UNIQUE,
+    encrypted_private_key TEXT NOT NULL,
+    salt VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users RENAME COLUMN username TO phone_number;
