@@ -78,11 +78,13 @@ export class EthersService {
     const tx = {
       to: txRequest.to,
       value: ethers.parseEther(txRequest.value),
-      data: txRequest.data || "0x",
+      data: txRequest.data ? ethers.hexlify(ethers.toUtf8Bytes(txRequest.data)) : "0x",
       gasLimit: txRequest.gasLimit
         ? ethers.toBigInt(txRequest.gasLimit)
         : undefined,
     };
+
+    console.log("Transaction Request:", tx);
 
     const txResponse = await wallet.sendTransaction(tx);
 
