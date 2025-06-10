@@ -2,6 +2,14 @@ import app from "./app";
 import { config } from "./config/config";
 import { testConnection } from "./db/database";
 
+import express from "express";
+import fs from "fs";
+
+app.get("/api/public-key", (req, res) => {
+  const pub = fs.readFileSync("public.pem", "utf8");
+  res.type("text/plain").send(pub);
+});
+
 const startServer = async (): Promise<void> => {
   try {
     if (!config.infura.projectId) {
