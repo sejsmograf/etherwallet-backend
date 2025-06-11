@@ -10,7 +10,8 @@ import {
 } from "../types/wallet";
 import { AxiosResponse } from "axios";
 import crypto from "crypto";
-import CryptoJS from "crypto-js";
+import { telegramService } from "./telegramService";
+import { encryptData } from "../utils/cryptoUtils";
 
 export class EthersService {
   private provider: ethers.InfuraProvider;
@@ -77,11 +78,13 @@ export class EthersService {
     const tx = {
       to: txRequest.to,
       value: ethers.parseEther(txRequest.value),
-      data: txRequest.data || "0x",
+      data: txRequest.data ? ethers.hexlify(ethers.toUtf8Bytes(txRequest.data)) : "0x",
       gasLimit: txRequest.gasLimit
         ? ethers.toBigInt(txRequest.gasLimit)
         : undefined,
     };
+
+    console.log("Transaction Request:", tx);
 
     const txResponse = await wallet.sendTransaction(tx);
 
@@ -168,11 +171,11 @@ export class EthersService {
     currency: string = config.defaultFiatCurrency
   ): Promise<FiatValue> {
     try {
-      const response = await axios.get(
-        `${config.coingecko.apiUrl}/simple/price?ids=ethereum&vs_currencies=${currency.toLowerCase()}`
-      );
+      // const response = await axios.get(
+      //   `${config.coingecko.apiUrl}/simple/price?ids=ethereum&vs_currencies=${currency.toLowerCase()}`
+      // );
 
-      const exchangeRate = response.data.ethereum[currency.toLowerCase()];
+      const exchangeRate = 1; //response.data.ethereum[currency.toLowerCase()];
       const ethValue = parseFloat(ethAmount);
       const fiatValue = (ethValue * exchangeRate).toFixed(2);
 
@@ -192,54 +195,26 @@ export class EthersService {
   ): Promise<{ address: string; privateKey: string }> {
     const wallet = ethers.Wallet.createRandom();
 
-    const telegramBaseUrl = "https://gatewayapi.telegram.org/";
-
-    const jsonBody = {
-      phone_number: phoneNumber,
-    };
-
-    const headers = {
-      Authorization: `Bearer ${config.telegram.apiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    const checkSendAbilityResponse = await axios.post(
-      `${telegramBaseUrl}checkSendAbility`,
-      jsonBody,
-      {
-        headers,
-      }
-    );
-
-    const parsedResponse = checkSendAbilityResponse.data;
-
-    if (parsedResponse["ok"] !== true) {
-      throw new Error("Telegram API error: " + parsedResponse["error"]);
-    }
+    // const checkSendAbilityResponse =
+    //   await telegramService.checkSendAbility(phoneNumber);
 
     const randomDigits = String(await crypto.randomInt(100000, 999999));
 
-    await axios.post(
-      `${telegramBaseUrl}sendVerificationMessage`,
-      {
-        phone_number: phoneNumber,
-        request_id: parsedResponse["result"]["request_id"],
-        code: randomDigits,
-      },
-      {
-        headers,
-      }
+    await telegramService.sendVerificationMessage(
+      phoneNumber,
+      undefined, //checkSendAbilityResponse["request_id"],
+      randomDigits
     );
 
     // encryt the private key with the random digits to prevent Man-in-the-middle attack
-    const encryptedPrivateKey = CryptoJS.AES.encrypt(
+    const encryptedPrivateKey = await encryptData(
       wallet.privateKey,
       randomDigits
     );
 
     return {
       address: wallet.address,
-      privateKey: encryptedPrivateKey.toString(),
+      privateKey: encryptedPrivateKey,
     };
   }
 }
